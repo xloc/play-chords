@@ -36,6 +36,6 @@ export default function ChordButton(props: ChordButtonProps) {
     onTouchStart={isTouchScreen ? genOnClick(text) : undefined}
   >
     <p className='text-5xl'>{text}</p>
-    <p>{notes.join(' ')}</p>
+    <p>{playNotes.join(' ')}</p>
   </button>;
 }
