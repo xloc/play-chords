@@ -18,6 +18,7 @@
     "tone": "^14.7.77"
   },
   "devDependencies": {
+    "@types/lodash": "^4.14.192",
     "@types/react": "^17.0.33",
     "@types/react-dom": "^17.0.10",
     "@vitejs/plugin-react": "^1.0.7",
