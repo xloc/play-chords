@@ -2,11 +2,11 @@ import classNames from 'classnames';
 import React from 'react';
 
 import { Chord, Note, note } from "tonal";
+import { Chord as ChordType } from "@tonaljs/chord";
 import * as Tone from 'tone';
 
 
 const synth = new Tone.PolySynth(Tone.Synth).toDestination();
-
 
 const extendToHigherOctaves = (notes: string[], rootOctave: number | undefined) => {
   const chroma = notes.map(Note.chroma) as number[];
@@ -19,8 +19,34 @@ const extendToHigherOctaves = (notes: string[], rootOctave: number | undefined) 
   });
 };
 
-const wrapAround = (notes: string[], octave: number | undefined) => {
-  return notes.map((n) => `${n}${octave ?? 4}`);
+interface ChordResult extends ChordType {
+  playedNotes: string[];
+}
+
+// C:01123 => 'C2 C3 E3 G3'.split(' ')
+const parseChord: (t: string) => ChordResult = (text: string) => {
+  if (text.indexOf(':') === -1)
+    text = text + ":001123";
+
+  const [chordName, numbers] = text.split(":");
+  const chordNotes = numbers.split('').map(Number).map(Chord.degrees(chordName));
+  const chroma = chordNotes.map(Note.chroma) as number[];
+  console.log({ chordName, numbers });
+
+  let octave = 1;
+  let playedNotes: string[] = [];
+  chordNotes.forEach((note, i) => {
+    if (note === '') {
+      octave += 1;
+      return;
+    }
+    if (i > 0 && chroma[i] <= chroma[i - 1]) {
+      octave += 1;
+    }
+    playedNotes.push(`${note}${octave}`);
+  });
+
+  return { playedNotes, ...Chord.get(chordName) };
 };
 
 
@@ -30,30 +56,26 @@ interface ChordButtonProps {
 export default function ChordButton(props: ChordButtonProps) {
   const { text } = props;
 
-  const chord = Chord.get(text);
-  const notes = chord.notes;
-  // const playNotes = extendToHigherOctaves(notes, 4);
-  const playNotes = wrapAround(notes, 4);
+  const { playedNotes, symbol } = parseChord(text);
 
 
   const isTouchScreen = 'ontouchstart' in window ? true : undefined;
 
-  const genOnClick = (text: string) => {
-    return (e: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => {
-      console.log(playNotes);
-      // setTimeout(() => { synth.releaseAll(); }, 5 * 1000); // guard
-      synth.triggerAttackRelease(playNotes, "8n");
-    };
+  const genOnClick = (e: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => {
+    console.log(playedNotes);
+    // setTimeout(() => { synth.releaseAll(); }, 5 * 1000); // guard
+    synth.triggerAttackRelease(playedNotes, "8n");
   };
+
 
 
   return <button
     className={classNames('h-40 w-40 shadow-md border rounded-md p-3 select-none',
-      { 'bg-red-200': notes.length === 0 })}
-    onMouseDown={isTouchScreen ? undefined : genOnClick(text)}
-    onTouchStart={isTouchScreen ? genOnClick(text) : undefined}
+      { 'bg-red-200': playedNotes.length === 0 })}
+    onMouseDown={isTouchScreen ? undefined : genOnClick}
+    onTouchStart={isTouchScreen ? genOnClick : undefined}
   >
-    <p className='text-5xl'>{text}</p>
-    <p>{playNotes.join(' ')}</p>
+    <p className='text-5xl'>{symbol}</p>
+    <p>{playedNotes.join(' ')}</p>
   </button>;
 }
