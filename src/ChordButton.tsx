@@ -26,12 +26,11 @@ interface ChordResult extends ChordType {
 // C:01123 => 'C2 C3 E3 G3'.split(' ')
 const parseChord: (t: string) => ChordResult = (text: string) => {
   if (text.indexOf(':') === -1)
-    text = text + ":001123";
+    text = text + ":00112345";
 
   const [chordName, numbers] = text.split(":");
   const chordNotes = numbers.split('').map(Number).map(Chord.degrees(chordName));
   const chroma = chordNotes.map(Note.chroma) as number[];
-  console.log({ chordName, numbers });
 
   let octave = 1;
   let playedNotes: string[] = [];
@@ -52,9 +51,10 @@ const parseChord: (t: string) => ChordResult = (text: string) => {
 
 interface ChordButtonProps {
   text: string;
+  onActivate?: (playedNotes: string[]) => void;
 }
 export default function ChordButton(props: ChordButtonProps) {
-  const { text } = props;
+  const { onActivate, text } = props;
 
   const { playedNotes, symbol } = parseChord(text);
 
@@ -62,9 +62,9 @@ export default function ChordButton(props: ChordButtonProps) {
   const isTouchScreen = 'ontouchstart' in window ? true : undefined;
 
   const genOnClick = (e: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => {
-    console.log(playedNotes);
     // setTimeout(() => { synth.releaseAll(); }, 5 * 1000); // guard
     synth.triggerAttackRelease(playedNotes, "8n");
+    if (onActivate) onActivate(playedNotes);
   };
 
 
